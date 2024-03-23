@@ -71,12 +71,13 @@ Easiest to get started is to flash a pre-compiled binary. Get a [regular ESP fla
 If you want to compile your own version you'll need the libraries for the ESP8266. Follow [this guide](https://randomnerdtutorials.com/how-to-install-esp8266-board-arduino-ide/) if you haven't completed that step before.
 
 Add a few more libraries using the Manage Libraries menu:
-1. PubSubClient
-2. Adafruit GFX
-3. Adafruit SSD1306 Wemos Mini OLED
-4. ESP_DoubleResetDetector
-5. Adafruit_ILI9341
-6. XPT2046_Touchscreen
+1. PubSubClient@2.8.0 (https://pubsubclient.knolleary.net/ use 2.8.0 for setBufferSize function)
+2. Adafruit GFX@1.11.9
+3. Adafruit SSD1306 Wemos Mini OLED@1.1.2
+4. ESP_DoubleResetDetector@1.1.2
+5. Adafruit_ILI9341@1.6.0
+6. XPT2046_Touchscreen@1.4
+7. EspSoftwareSerial@8.1.0
 
 (Even if you are not using the OLED or TFT screen, you should install the libraries or it will not compile.)
 
