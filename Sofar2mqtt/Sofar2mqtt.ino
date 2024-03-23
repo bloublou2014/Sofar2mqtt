@@ -959,12 +959,12 @@ void addStateInfo(String &state, unsigned int index, unsigned int dataindex, mod
     sendMqtt(const_cast<char*>(topic.c_str()), stringVal);
   }
 
-  if ((mqtt_status_reads[index].mqtt_name == "batterySOC") && (tftModel) && (invertermodel != HYDV2)) {
+  if ((mqtt_status_reads[index].mqtt_name == "batterySOC") && (tftModel) && (inverterModel != HYDV2)) {
     tft.setTextSize(2);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
     drawCentreString("SOC: " + stringVal + "%", 120, 70);
   }
-  if ((mqtt_status_reads[index].mqtt_name == "battery_avg_SOC") && (tftModel) && (invertermodel == HYDV2)) {
+  if ((mqtt_status_reads[index].mqtt_name == "battery_avg_SOC") && (tftModel) && (inverterModel == HYDV2)) {
     tft.setTextSize(2);
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
     drawCentreString("SOC: " + stringVal + "%", 120, 70);
