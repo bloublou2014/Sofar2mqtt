@@ -74,7 +74,7 @@ Add a few more libraries using the Manage Libraries menu:
 1. PubSubClient
 2. Adafruit GFX
 3. Adafruit SSD1306 Wemos Mini OLED
-4. DoubleResetDetect
+4. ESP_DoubleResetDetector
 5. Adafruit_ILI9341
 6. XPT2046_Touchscreen
 
