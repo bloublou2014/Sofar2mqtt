@@ -3,11 +3,14 @@ const char* version = "v3.7b";
 
 bool tftModel = true; //true means 2.8" color tft, false for oled version. This is always true for ESP32 devices as we don't use oled device for esp32.
 
-bool calculated = true; //default to pre-calculated values before sending to mqtt
+bool calculated = false; //default to pre-calculated values before sending to mqtt
 
 unsigned int screenDimTimer = 30; //dim screen after 30 secs
 unsigned long lastScreenTouch = 0;
 
+
+#define CUSTOM_VERSION true
+#define ESP32 true
 
 #define ESP_DRD_USE_EEPROM true
 #include <ESP_DoubleResetDetector.h>
@@ -374,10 +377,25 @@ static struct mqtt_status_register  mqtt_status_reads[] =
 #define SELFUSE_INTERVAL 3000
 
 // Wemos OLED Shield set up. 64x48, pins D1 and D2
+#if defined(CUSTOM_VERSION)
+#include <XPT2046_Touchscreen.h>
+#endif
+
 #include <SPI.h>
 #include <Wire.h>
 
 #include "Sofar2mqtt.h"
+
+
+#if defined(CUSTOM_VERSION)
+#include <TFT_eSPI.h>
+
+TFT_eSPI tft = TFT_eSPI();  
+
+#define TFT_LED   5 // ok.
+
+
+#else
 
 //for the tft
 #include <Adafruit_ILI9341.h>   // include Adafruit ILI9341 TFT library
@@ -392,15 +410,23 @@ static struct mqtt_status_register  mqtt_status_reads[] =
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);
 #elif defined(ESP32)
 //make sure to change pins_arduino.h for your board to match MISO, MOSI, SCLK and CS for hardware SPI
-#define TFT_CS    1
-#define TFT_DC    4
-#define TFT_LED   5
-#define TFT_MOSI 7
-#define TFT_MISO 2
-#define TFT_SCLK 6
-#define TFT_RST 10
+// Controller MOSI = GPIO7
+// Controller MISO = GPIO2
+// Controller SCLK = GPIO6
+// TFT CS = GPIO1
+// TFT DC = GPIO4
+// TFT Reset = GPIO10
+// TFT Backlight = GPIO5
+#define TFT_CS    1 // ok.
+#define TFT_DC    4 // ok.
+#define TFT_LED   5 // ok.
+#define TFT_MOSI  7 // ok.
+#define TFT_MISO  2 // ok.
+#define TFT_SCLK  6 // ok.
+#define TFT_RST  10 // ok.
 // initialize ILI9341 TFT library
-Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+// Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
+Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_SCLK, TFT_RST, TFT_MISO);
 #endif
 
 
@@ -410,10 +436,29 @@ Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_RST);
 #define TCS_PIN  0
 #define TIRQ_PIN  2
 #elif defined(ESP32)
-#define TCS_PIN  0
-#define TIRQ_PIN  3
+// TOUCH CS = GPIO0  --
+// TOUCH IRQ = GPIO3 --
+#define TCS_PIN   0 // ok.
+#define TIRQ_PIN  3 // ok.
 #endif
 XPT2046_Touchscreen ts(TCS_PIN, TIRQ_PIN);
+#endif
+
+
+#if defined(CUSTOM_VERSION)
+
+#define CS_PIN  0
+XPT2046_Touchscreen ts(CS_PIN);
+#define TIRQ_PIN  2
+//XPT2046_Touchscreen ts(CS_PIN);  // Param 2 - NULL - No interrupts
+//XPT2046_Touchscreen ts(CS_PIN, 255);  // Param 2 - 255 - No interrupts
+//XPT2046_Touchscreen ts(CS_PIN, TIRQ_PIN);  // Param 2 - Touch IRQ Pin - interrupt enabled polling
+
+#endif
+
+
+
+// TFT_eSPI
 
 //for the oled
 #include <Adafruit_GFX.h>
@@ -613,6 +658,9 @@ void setup_wifi()
   WiFiManagerParameter CUSTOM_MQTT_PORT("port", "MQTT port",     MQTT_PORT, 6);
   WiFiManagerParameter CUSTOM_MQTT_USER("user", "MQTT user",     MQTT_USER, 32);
   WiFiManagerParameter CUSTOM_MQTT_PASS("pass", "MQTT pass",     MQTT_PASS, 32);
+  tft.println("setup wifi");
+  tft.println("device");
+  tft.println(deviceName);
 
 #if defined(ESP8266)
   const char *bufferStr = R"(
@@ -800,6 +848,8 @@ void setup_wifi()
     ESP.restart();
 #endif
   }
+
+  tft.println("wifi connection ok");  
 
   // * Read updated parameters
   strcpy(deviceName, CUSTOM_MY_HOST.getValue());
@@ -1794,7 +1844,9 @@ void drawCentreString(const String &buf, int x, int y)
 {
   int16_t x1, y1;
   uint16_t w, h;
+  #if !defined(CUSTOM_VERSION)
   tft.getTextBounds(buf, x, y, &x1, &y1, &w, &h); //calc width of new string
+  #endif
   tft.setCursor(0, y);
   tft.print("                           ");
   tft.setCursor(x - w / 2, y);
@@ -2099,12 +2151,15 @@ void resetConfig() {
   digitalWrite(21, LOW); //rx led on
 #endif
   if (tftModel) {
-    analogWrite(TFT_LED, 32); //PWM on led pin to dim screen
-    tft.fillScreen(ILI9341_RED);
-    tft.fillScreen(ILI9341_BLACK);
-    tft.setScrollMargins(1, 10);
-    tft.setTextColor(ILI9341_RED, ILI9341_BLACK); // Red on black
-    tft.println("Double reset detected, clearing config.");
+      analogWrite(TFT_LED, 32); //PWM on led pin to dim screen
+      tft.fillScreen(ILI9341_RED);
+      tft.fillScreen(ILI9341_BLACK);
+      #if !defined(CUSTOM_VERSION)
+      tft.setScrollMargins(1, 10);
+      #endif
+
+      tft.setTextColor(ILI9341_RED, ILI9341_BLACK); // Red on black
+      tft.println("Double reset detected, clearing config.");
   }
   //WiFi.persistent(true);
   //WiFi.disconnect();
@@ -2143,7 +2198,7 @@ void doubleResetDetect() {
       tft.begin();
       tft.setRotation(2);
     }
-    resetConfig();
+    // AG resetConfig();
   }
 }
 
@@ -2168,11 +2223,21 @@ void setup()
     analogWrite(TFT_LED, 32); //PWM on led pin to dim screen
     tft.fillScreen(ILI9341_CYAN);
     tft.fillScreen(ILI9341_BLACK);
+    #if !defined(CUSTOM_VERSION)
     tft.setScrollMargins(1, 10);
+    #endif
     tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK); // White on black
     tft.println("Sofar2mqtt starting...");
+    tft.println("Wazabi");
+    tft.println("touch screen starting");
+    // SPI.begin( TFT_SCLK, TFT_MISO, TFT_MOSI );
+    // SPI.setFrequency( 60000000 );
+    tft.println("touch screen SPI set");
     ts.begin();
+    tft.println("touch screen Touch started");
     ts.setRotation(1);
+    tft.println("touch screen Touch rotation done");
+    tft.println("touch screen rotation 1");
 
   } else {
     //Turn on the OLED
@@ -2183,6 +2248,7 @@ void setup()
   }
 
   if (tftModel) {
+    tft.println("setup serial 9600");
     Serial.begin(9600);
   } else {
     pinMode(SERIAL_COMMUNICATION_CONTROL_PIN, OUTPUT);
@@ -2191,8 +2257,9 @@ void setup()
   }
   delay(500);
   drd->stop();
+  tft.println("setup_wifi");
   setup_wifi(); //set wifi and get settings, so first thing to do
-
+  tft.println("wifi done");
   if (tftModel) {
     tft.print("Running inverter model: ");
     if (inverterModel == ME3000) {
@@ -2234,10 +2301,12 @@ bool touchedBefore = false;
 void tsLoop() {
   if (ts.tirqTouched()) {
     if (ts.touched()) { //this will run update() and therefore reset the tirqTouched flag if touch is released
+       tft.println("Touched");
       if (!touchedBefore) {
         touchedBefore = true;
         brightness == 32 ? brightness = 0 : brightness = 32;
-        analogWrite(TFT_LED, brightness);
+        // analogWrite(TFT_LED, brightness);
+        analogWrite(TFT_LED, 32); // AG
         lastScreenTouch = millis();
         delay(100);
       }
@@ -2247,7 +2316,8 @@ void tsLoop() {
   }
   if ((screenDimTimer > 0) && (brightness > 0) && ((unsigned long)(millis() - lastScreenTouch) > (1000 * screenDimTimer))) {
     brightness--;
-    analogWrite(TFT_LED, brightness);
+    // analogWrite(TFT_LED, brightness);
+    analogWrite(TFT_LED, 32); // AG
     delay(50);
   }
 

@@ -75,9 +75,26 @@ Add a few more libraries using the Manage Libraries menu:
 2. Adafruit GFX@1.11.9
 3. Adafruit SSD1306 Wemos Mini OLED@1.1.2
 4. ESP_DoubleResetDetector@1.1.2
-5. Adafruit_ILI9341@1.6.0
+5. Adafruit_ILI9341@1.6.0 replaced by TFT_eSPI@1.0.0
 6. XPT2046_Touchscreen@1.4
 7. EspSoftwareSerial@8.1.0
+
+
+For TFT_eSPI to work properly, copy files from \libs\TFT_eSPI\User_Setup.h and User_Setup_Select.h to your local arduinoIDE lib directory (C:\Users\USERNAME\Documents\Arduino\libraries\TFT_eSPI)
+
+
+Board version: "ESP32-C3-MINI-1-N4"
+Board description: ESP32-C3 with RS485 and TFT touch screen - designed by Igor Ybema 01-2024"
+
+Test on Arduino IDE version: 2.1.0 
+Arduino board to be used: "ESP32-C3 Dev Module"
+from board manager url:
+```
+https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_dev_index.json
+https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json
+```
+with "esp32" by "Espressif Systems" version 2.0.14
+
 
 (Even if you are not using the OLED or TFT screen, you should install the libraries or it will not compile.)
 
