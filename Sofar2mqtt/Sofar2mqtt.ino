@@ -124,6 +124,8 @@ struct modbusResponse
 
 bool modbusError = true;
 
+String batterySavingText = "";
+
 // SoFar Information Registers
 #define ME3000_START 0x0200
 #define ME3000_END 0x0239
@@ -1317,27 +1319,38 @@ void mqttCallback(String topic, byte *message, unsigned int length)
             fnCode = SOFAR_FN_STANDBY;
             fnParam = SOFAR_PARAM_STANDBY;
           }
+          displayBatterySave("cmd standby");
         }
         else if (cmd == "auto")
         {
-          if (messageBool)
+          displayBatterySave("cmd auto");
+          if (messageBool) {
             fnCode = SOFAR_FN_AUTO;
-          else if (messageTemp == "battery_save")
+            displayBatterySave("cmd auto fncode");
+          }
+          else if (messageTemp == "battery_save"){
             BATTERYSAVE = true;
+            displayBatterySave("cmd battery_save");
+          }
         }
         else if (messageValue > 0)
         {
           fnParam = messageValue;
 
-          if (cmd == "charge")
+          if (cmd == "charge"){
             fnCode = SOFAR_FN_CHARGE;
-          else if (cmd == "discharge")
+            displayBatterySave("cmd charge");
+          }
+          else if (cmd == "discharge"){
             fnCode = SOFAR_FN_DISCHARGE;
+            displayBatterySave("cmd discharge");
+          }
         }
 
         if (fnCode)
         {
           BATTERYSAVE = false;
+          displayBatterySave("cmd fnCode");
           sendPassiveCmd(SOFAR_SLAVE_ID, fnCode, fnParam, cmd);
         }
         break;
@@ -1443,12 +1456,13 @@ void batterySave()
       {
         //exporting to the grid
         sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_AUTO, 0, "bsave_auto");
-
+        displayBatterySave("Charge");
       }
       else
       {
         //importing from the grid
         sendPassiveCmd(SOFAR_SLAVE_ID, SOFAR_FN_STANDBY, SOFAR_PARAM_STANDBY, "bsave_standby");
+        displayBatterySave("Save");
       }
     }
   }
@@ -1955,6 +1969,53 @@ void printScreen(String text1, String text2) {
   }
 }
 
+
+
+void printScreen2(String text) {
+  if (text.length() > 10) {
+    int index = text.lastIndexOf(' ');
+    String text1 = text.substring(0, index);
+    String text2 = text.substring(index + 1);
+    printScreen2(text1, text2);
+  } else {
+    if (tftModel) {
+      tft.fillRect(40, 70, 159, 64, ILI9341_CYAN);
+      int pos = 115 - 12 * (text.length() / 2);
+      tft.setCursor(pos, 95);
+      tft.setTextSize(2);
+      tft.setTextColor(ILI9341_BLACK, ILI9341_CYAN);
+      tft.println(text);
+    } else {
+      updateOLED("NULL", "NULL", text, "NULL");
+    }
+  }
+}
+
+void printScreen2(String text1, String text2) {
+  if (tftModel) {
+    tft.fillRect(40, 70, 159, 64, ILI9341_CYAN);
+    tft.setTextSize(2);
+    tft.setTextColor(ILI9341_BLACK, ILI9341_CYAN);
+    { int pos = 115 - 12 * (text1.length() / 2);
+      tft.setCursor(pos, 80);
+      tft.println(text1);
+    }
+    { int pos = 115 - 12 * (text2.length() / 2);
+      tft.setCursor(pos, 110);
+      tft.println(text2);
+    }
+  } else {
+    updateOLED("NULL", "NULL", text1, text2);
+  }
+}
+
+void displayBatterySave(String mode) {
+  if (mode != batterySavingText){
+    batterySavingText = mode;
+    printScreen2(mode);
+  }  
+}
+
 void setupOTA() {
   ArduinoOTA.setHostname(deviceName);
   // ArduinoOTA.setPassword("admin");
@@ -2199,6 +2260,7 @@ void doubleResetDetect() {
       tft.setRotation(2);
     }
     // AG resetConfig();
+    resetConfig();
   }
 }
 
@@ -2301,12 +2363,11 @@ bool touchedBefore = false;
 void tsLoop() {
   if (ts.tirqTouched()) {
     if (ts.touched()) { //this will run update() and therefore reset the tirqTouched flag if touch is released
-       tft.println("Touched");
       if (!touchedBefore) {
         touchedBefore = true;
         brightness == 32 ? brightness = 0 : brightness = 32;
-        // analogWrite(TFT_LED, brightness);
-        analogWrite(TFT_LED, 32); // AG
+        analogWrite(TFT_LED, brightness);
+        // analogWrite(TFT_LED, 32); // AG
         lastScreenTouch = millis();
         delay(100);
       }
@@ -2316,8 +2377,8 @@ void tsLoop() {
   }
   if ((screenDimTimer > 0) && (brightness > 0) && ((unsigned long)(millis() - lastScreenTouch) > (1000 * screenDimTimer))) {
     brightness--;
-    // analogWrite(TFT_LED, brightness);
-    analogWrite(TFT_LED, 32); // AG
+    analogWrite(TFT_LED, brightness);
+    // analogWrite(TFT_LED, 32); // AG
     delay(50);
   }
 
@@ -2353,7 +2414,11 @@ void loop()
   retrieveData();
 
   //Set battery save state
-  if (!modbusError) batterySave();
+  if (!modbusError) {
+     batterySave();
+  } else {
+    displayBatterySave("Modbus error");
+  }
 }
 
 //calcCRC and checkCRC are based on...
