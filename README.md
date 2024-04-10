@@ -110,6 +110,11 @@ Now connect wires A and B to the two wire RS485 input of your inverter, which is
 
 ![ME3000SP Data Connections](pics/485s.jpg)
 
+**Important** - The RS485 connection is polarised, so if you get no data, try swapping the wires around.
+
+**Important**
+ME3000 SP (and probably others inverters) will not execute commands if the inverter is in "time of work" mode. It should be on "standby" or "passive" mode in order for sofar2mqtt commands to be executed.
+
 # Troubleshooting
 
 Nothing on the OLED or TFT screen? Make sure you solder all the pins on the OLED and ESP8266, not just those with wires attached.  
