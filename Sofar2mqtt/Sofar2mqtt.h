@@ -603,7 +603,7 @@ const unsigned char background [] PROGMEM = {
 };
 
 
-const char index_html[] PROGMEM = R"=====(
+const char index_html_part1[] PROGMEM = R"=====(
 <!DOCTYPE html>
 <html>
 <head>
@@ -665,7 +665,11 @@ const char index_html[] PROGMEM = R"=====(
 </head>
 <body>
   <header>
-    <h1>Sofar2MQTT - 3.8</h1>
+    <h1>Sofar2MQTT - 
+)=====";
+
+const char index_html_part2[] PROGMEM = R"=====(
+    </h1>
   </header>
   <div class="container">
     <p><span class="label">Uptime:</span><span class="value" id="uptime"></span></p>

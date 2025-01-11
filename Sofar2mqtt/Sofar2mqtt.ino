@@ -1,5 +1,5 @@
 // The device name is used as the MQTT base topic. If you need more than one Sofar2mqtt on your network, give them unique names.
-const char* version = "v3.8";
+const char* version = "v3.9";
 
 bool tftModel = true; //true means 2.8" color tft, false for oled version. This is always true for ESP32 devices as we don't use oled device for esp32.
 
@@ -259,7 +259,7 @@ static struct mqtt_status_register  mqtt_status_reads[] =
   { ME3000, SOFAR_REG_GRIDFREQ, "grid_freq", U16, DIV100 },
   { ME3000, SOFAR_REG_GRIDW, "grid_power", S16, MUL10 },
   { ME3000, SOFAR_REG_BATTW, "battery_power", S16, MUL10 },
-  { ME3000, SOFAR_REG_BATTV, "battery_voltage", U16, DIV10 },
+  { ME3000, SOFAR_REG_BATTV, "battery_voltage", U16, DIV100 },
   { ME3000, SOFAR_REG_BATTA, "battery_current", S16, DIV100 },
   { ME3000, SOFAR_REG_SYSIOW, "inverter_power", S16, MUL10 },
   { ME3000, SOFAR_REG_BATTSOC, "batterySOC", U16, NOCALC },
@@ -1957,7 +1957,17 @@ void setupOTA() {
 
 // Webserver root page
 void handleRoot() {
-  httpServer.send_P(200, "text/html", index_html);
+  httpServer.setContentLength(CONTENT_LENGTH_UNKNOWN); // Enables streaming
+  httpServer.send(200, "text/html", "");
+  httpServer.sendContent_P(index_html_part1);
+  httpServer.sendContent(version);
+#ifdef ESP8266
+  httpServer.sendContent(" - ESP8266");
+#else
+  httpServer.sendContent(" - ESP32");
+#endif    
+  httpServer.sendContent_P(index_html_part2);
+  httpServer.sendContent(""); // Signal the end of the response
 }
 
 // Webserver root page
